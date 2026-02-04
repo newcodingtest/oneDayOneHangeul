@@ -1,3 +1,4 @@
+import { GrammarLesson } from "@/types/grammer";
 
 export const getSampleLesson = (years: number, month: number, day: number): GrammarLesson => ({
  "date": `${years}년 ${month}월 ${day}일`,
