@@ -14,3 +14,4 @@ export interface ExampleSentence {
   text: string;
   translation: string;
 }
+

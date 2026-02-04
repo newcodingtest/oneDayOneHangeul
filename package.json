@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "npx rimraf .next node_modules"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.93.3",
     "@vercel/analytics": "^1.6.1",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",

@@ -4,7 +4,7 @@ import GrammarContentClient from '@/components/GrammarContentClient'; // 새로 
 import Header from '@/components/Header';
 
 export const revalidate = 86400;
-export const dynamic = 'force-dynamic'; // 접속할 때마다 새로 계산해!
+export const dynamic = 'force-dynamic';
 
 async function getGrammarData(month:number, day: number) {
   // ⚠️ 서버에서 fetch할 때는 전체 URL이 필요합니다. 
