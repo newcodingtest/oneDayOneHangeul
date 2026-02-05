@@ -17,81 +17,70 @@ class AudioService {
   };
 
 async play(text: string, options?: AudioServiceOptions): Promise<void> {
-  // 1. 보이스 목록을 가져오는 시점을 보장하는 헬퍼 함수
-  const getVoicesSafe = (): Promise<SpeechSynthesisVoice[]> => {
-    return new Promise((resolve) => {
-      let voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        resolve(voices);
-      } else {
-        window.speechSynthesis.onvoiceschanged = () => {
-          voices = window.speechSynthesis.getVoices();
-          resolve(voices);
-        };
-      }
-    });
-  };
+  const synthesis = window.speechSynthesis;
 
-  if (typeof window === 'undefined' || !window.speechSynthesis) {
+  if (typeof window === 'undefined' || !synthesis) {
     throw new Error('지원하지 않는 브라우저입니다.');
   }
 
-  // 안드로이드/iOS 공통: 이전 재생 즉시 중단
-  window.speechSynthesis.cancel();
+  // 1. 인앱뷰에서 꼬인 큐를 풀기 위한 초기화
+  synthesis.cancel();
+
+  const getVoicesSafe = (): Promise<SpeechSynthesisVoice[]> => {
+    return new Promise((resolve) => {
+      const voices = synthesis.getVoices();
+      if (voices.length > 0) resolve(voices);
+      synthesis.onvoiceschanged = () => resolve(synthesis.getVoices());
+      // 인앱뷰 대응: 0.1초 뒤에도 안 잡히면 일단 현재 목록 반환
+      setTimeout(() => resolve(synthesis.getVoices()), 100);
+    });
+  };
 
   const voices = await getVoicesSafe();
   const utterance = new SpeechSynthesisUtterance(text);
   
   const ua = navigator.userAgent.toLowerCase();
   const isIOS = /iphone|ipad|ipod/.test(ua);
-  const isAndroid = /android/.test(ua);
+  const isKakao = /kakaotalk/.test(ua); // 카카오톡 인앱뷰 여부 확인
 
-  // 2. [애플 해결] 먹먹함 방지: 고음질(Enhanced) 우선 순위
   let selectedVoice = null;
+
   if (isIOS) {
-    // 'Siri' 보이스나 'Enhanced'가 붙은 보이스가 훨씬 선명합니다.
+    // 2. [인앱뷰 핵심] 우선순위를 훨씬 정교하게 세팅합니다.
+    // 'Siri'가 가장 자연스럽고, 그 다음이 'Enhanced', 마지막이 일반 'Yuna'입니다.
     selectedVoice = 
-      voices.find(v => v.lang === 'ko-KR' && v.name.includes('Siri')) ||
-      voices.find(v => v.lang === 'ko-KR' && v.name.includes('Enhanced')) ||
+      voices.find(v => v.lang.includes('ko') && v.name.includes('Siri')) ||
+      voices.find(v => v.lang.includes('ko') && v.name.includes('Enhanced')) ||
       voices.find(v => v.name.includes('Yuna')) ||
-      voices.find(v => v.lang.startsWith('ko'));
-    
-    utterance.rate = options?.rate || 1.0; 
-    utterance.pitch = 1.0;
-  } 
-  // 3. [안드로이드 해결] 무음 방지: Google 엔진 강제 및 음량 설정
-  else if (isAndroid) {
-    selectedVoice = 
-      voices.find(v => v.name.toLowerCase().includes('google') && v.lang.startsWith('ko')) ||
-      voices.find(v => v.lang.startsWith('ko'));
-    
-    // 안드로이드는 rate가 너무 낮으면 소리가 깨지거나 안 나올 수 있음
-    utterance.rate = options?.rate || 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0; // 볼륨 명시
+      voices.find(v => v.lang === 'ko-KR');
+
+    // 3. [자연스러움 튜닝] 
+    // 인앱뷰는 소리가 뭉개질 수 있으므로 rate(속도)를 아주 미세하게 조정합니다.
+    // 1.0보다 0.95 정도가 한국어의 성조를 가장 잘 표현합니다.
+    utterance.rate = options?.rate || (isKakao ? 0.95 : 1.0);
+    utterance.pitch = 1.0; 
   } else {
-    selectedVoice = voices.find(v => v.lang === 'ko-KR') || voices[0];
+    // 안드로이드 및 기타 기기 로직 (생략 가능하나 유지)
+    selectedVoice = voices.find(v => v.lang.includes('ko')) || voices[0];
     utterance.rate = options?.rate || 1.0;
   }
 
   if (selectedVoice) {
     utterance.voice = selectedVoice;
-    utterance.lang = selectedVoice.lang; // 보이스의 언어 설정과 일치시킴
+    utterance.lang = selectedVoice.lang;
   } else {
     utterance.lang = 'ko-KR';
   }
 
   return new Promise((resolve, reject) => {
     utterance.onend = () => resolve();
-    utterance.onerror = (e) => {
-      console.error('TTS 에러 발생:', e);
-      reject(e);
-    };
+    utterance.onerror = (e) => reject(e);
 
-    // 4. [모바일 공통] 핵심: 큐가 꼬이지 않도록 아주 짧은 지연 후 실행
+    // 4. [중요] 인앱뷰는 하드웨어 가속이 느려 딜레이를 더 줘야 소리가 안 씹힙니다.
+    const delay = isKakao ? 250 : 150;
     setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
-    }, 150); 
+      synthesis.speak(utterance);
+    }, delay);
   });
 }
 
