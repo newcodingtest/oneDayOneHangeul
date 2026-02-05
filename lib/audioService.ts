@@ -16,6 +16,62 @@ class AudioService {
     lang: 'ko-KR', // Google TTS는 'en-US' 대신 'en'을 기본으로 사용 가능
   };
 
+// 1. 클래스 메서드로 정의 (추천)
+  public playNativeTTS(text: string): void {
+    // 이전 오디오가 재생 중이라면 중지
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio = null;
+    }
+
+    // 구글 번역기 TTS 엔진 주소 (무료)
+    const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ko&client=tw-ob`;
+    
+    const audio = new Audio(googleTtsUrl);
+    this.currentAudio = audio; // 현재 재생 중인 오디오 저장
+
+    audio.play().catch(e => {
+      console.error("재생 실패: 반드시 사용자 클릭 이벤트 내부에서 호출되어야 합니다.", e);
+    });
+
+    // 재생이 끝나면 참조 제거
+    audio.onended = () => {
+      this.currentAudio = null;
+    };
+  }
+
+async speakFree(text: string, options?: AudioServiceOptions) {
+  const synth = window.speechSynthesis;
+  synth.cancel();
+
+  // 1. 한국어 보이스만 필터링해서 목록 확보
+  let voices = synth.getVoices().filter(v => v.lang.includes('ko'));
+
+  // 2. 만약 목록이 비었다면 (모바일 대응) 0.1초 뒤 다시 시도
+  if (voices.length === 0) {
+    await new Promise(r => setTimeout(r, 100));
+    voices = synth.getVoices().filter(v => v.lang.includes('ko'));
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+
+  // 3. [핵심] 굴리는 발음(en)이 절대 안 나오게 한국어 보이스 강제 할당
+  // 구글(안드로이드)이나 시리(아이폰) 보이스를 우선적으로 찾음
+  const bestVoice = voices.find(v => v.name.includes('Google') || v.name.includes('Siri')) || voices[0];
+
+  if (bestVoice) {
+    utterance.voice = bestVoice;
+    utterance.lang = 'ko-KR';
+    
+    // 4. 모바일에서 소리가 안 나는 걸 방지하기 위한 꼼수 (살짝 느리게)
+    utterance.rate = 0.9; 
+    synth.speak(utterance);
+  } else {
+    // 한국어 보이스가 아예 없을 때만 브라우저 기본값 시도
+    utterance.lang = 'ko-KR';
+    synth.speak(utterance);
+  }
+}
 async play(text: string, options?: AudioServiceOptions): Promise<void> {
   const synthesis = window.speechSynthesis;
   if (!synthesis) return;
