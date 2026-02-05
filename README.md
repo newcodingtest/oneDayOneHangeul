@@ -370,50 +370,14 @@ Props를 통해 다양한 상황에 사용 가능
 
 ### 3. **관심사 분리**
 - **UI**: Components
-- **로직**: Hooks
-- **서비스**: Lib
+- **상태관리**: Hooks
+- **범용도구 및 외부 라이브러리**: Lib,
+- **서비스**: Service
 
 ### 4. **타입 안정성**
 모든 Props와 함수에 TypeScript 타입 정의
 
 ---
-
-## 🚀 확장 방법
-
-### 새로운 섹션 추가하기
-
-1. **컴포넌트 생성**
-```typescript
-// components/QuizSection.tsx
-interface QuizSectionProps {
-  questions: Question[];
-}
-
-export default function QuizSection({ questions }: QuizSectionProps) {
-  return <div>...</div>;
-}
-```
-
-2. **page.tsx에 추가**
-```typescript
-import QuizSection from '@/components/QuizSection';
-
-// ...
-<QuizSection questions={lesson.quiz} />
-```
-
-### 새로운 Hook 추가하기
-
-```typescript
-// hooks/useUserProgress.ts
-export function useUserProgress() {
-  const [progress, setProgress] = useState(0);
-  
-  // 로직...
-  
-  return { progress, updateProgress };
-}
-```
 
 ---
 
@@ -512,7 +476,6 @@ test('renders sentence', () => {
 
 ---
 
-**깔끔하고 확장 가능한 구조!** 🎉
 
 라이선스
 MIT

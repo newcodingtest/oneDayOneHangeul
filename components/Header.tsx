@@ -1,6 +1,6 @@
 // components/Header.tsx
 
-import { BookOpen, Menu } from './icons';
+import { BookOpen } from './icons';
 
 export default function Header() {
   return (
@@ -12,9 +12,6 @@ export default function Header() {
             Daily Korean Grammar
           </h1>
         </div>
-        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
-          <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-        </button>
       </div>
     </header>
   );
