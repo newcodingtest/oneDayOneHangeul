@@ -16,51 +16,93 @@ class AudioService {
     lang: 'ko-KR', // Google TTS는 'en-US' 대신 'en'을 기본으로 사용 가능
   };
 
-async play(text: string, options?: AudioServiceOptions): Promise<void> {
+async function play(text: string, options?: { rate?: number }) {
   const synthesis = window.speechSynthesis;
-  
-  // 1. 보이스 목록이 로드될 때까지 확실히 기다림
-  const getKoreanVoices = (): Promise<SpeechSynthesisVoice[]> => {
-    return new Promise((resolve) => {
-      let voices = synthesis.getVoices();
-      if (voices.length > 0) {
-        resolve(voices.filter(v => v.lang.includes('ko')));
+
+  const loadVoices = (timeoutMs = 1200) =>
+    new Promise<SpeechSynthesisVoice[]>((resolve) => {
+      const start = Date.now();
+
+      const tryResolve = () => {
+        const voices = synthesis.getVoices();
+        if (voices && voices.length) return resolve(voices);
+        if (Date.now() - start > timeoutMs) return resolve([]); // 타임아웃 fallback
+        setTimeout(tryResolve, 80);
+      };
+
+      // iOS/Chrome 모두에서 onvoiceschanged가 안 뜨는 케이스가 있어 폴링 병행
+      if ("addEventListener" in synthesis) {
+        // @ts-ignore
+        synthesis.addEventListener("voiceschanged", tryResolve, { once: true });
       } else {
-        synthesis.onvoiceschanged = () => {
-          resolve(synthesis.getVoices().filter(v => v.lang.includes('ko')));
-        };
+        synthesis.onvoiceschanged = tryResolve;
       }
+
+      tryResolve();
     });
+
+  const voices = await loadVoices();
+  const koVoices = voices.filter(v => (v.lang || "").toLowerCase().startsWith("ko"));
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "ko-KR";
+  utterance.rate = options?.rate ?? 0.95;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+
+  // 플랫폼 힌트
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+
+  const scoreVoice = (v: SpeechSynthesisVoice) => {
+    let s = 0;
+    const name = (v.name || "").toLowerCase();
+    const uri = (v.voiceURI || "").toLowerCase();
+    const lang = (v.lang || "").toLowerCase();
+
+    // 언어 정확도
+    if (lang === "ko-kr") s += 50;
+    else if (lang.startsWith("ko")) s += 30;
+
+    // Google 계열(안드로이드에서 정석 발음인 경우 많음)
+    if (name.includes("google")) s += 25;
+
+    // iOS Apple 계열 voiceURI 힌트 (Siri가 항상 최고 음질이 아님)
+    if (uri.includes("com.apple")) s += 20;
+
+    // "compact" 류 먹먹/전화기 음질 회피
+    if (name.includes("compact") || uri.includes("compact")) s -= 30;
+    if (name.includes("telephony") || uri.includes("telephony")) s -= 30;
+
+    // 로컬 서비스 보이스 선호 (환경에 따라 더 자연스러운 경우)
+    if (v.localService) s += 5;
+
+    // 이상한 엔진(대표적으로 espeak 계열)로 추정되면 감점
+    if (name.includes("espeak") || uri.includes("espeak")) s -= 40;
+
+    return s;
   };
 
-  const koVoices = await getKoreanVoices();
-  const utterance = new SpeechSynthesisUtterance(text);
-  
-  // 2. [핵심] 굴리는 발음 방지: 보이스 우선순위 강제 지정
-  // 이름에 'Siri', 'Google', 'Samsung'이 들어간 한국어 보이스가 진짜 한국인 발음입니다.
-  const selectedVoice = 
-    koVoices.find(v => v.name.includes('Siri')) ||               // iOS 1순위 (가장 자연스러움)
-    koVoices.find(v => v.name.includes('Google')) ||             // Android 1순위 (정석 발음)
-    koVoices.find(v => v.name.includes('Enhanced')) ||           // 고음질 보이스
-    koVoices.find(v => v.name.includes('Yuna')) ||               // 기본 한국어 보이스
-    koVoices[0];                                                 // 그 외 한국어 보이스
+  let selected: SpeechSynthesisVoice | undefined;
 
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-    utterance.lang = 'ko-KR'; // 언어 설정도 반드시 ko-KR로 명시
+  if (koVoices.length) {
+    selected = [...koVoices].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
   } else {
-    // 한국어 보이스를 아예 못 찾았을 때만 기본값 설정 (이때 굴리는 발음이 날 수 있음)
-    utterance.lang = 'ko-KR';
+    // 한국어 보이스가 아예 없으면 일단 lang만 지정 (하지만 억양 문제 가능)
+    selected = undefined;
   }
 
-  // 3. 발음 속도 최적화 (외국인이 듣기 좋게 약간 천천히)
-  utterance.rate = options?.rate || 0.9; 
-  utterance.pitch = 1.0;
+  if (selected) utterance.voice = selected;
 
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     utterance.onend = () => resolve();
-    synthesis.cancel(); // 큐 초기화
-    setTimeout(() => synthesis.speak(utterance), 50);
+    utterance.onerror = (e) => reject(e);
+
+    // iOS에서 cancel 직후 speak 하면 먹먹/씹힘이 생기는 케이스가 있어 딜레이 증가
+    synthesis.cancel();
+    const delay = isIOS ? 220 : 80;
+    setTimeout(() => synthesis.speak(utterance), delay);
   });
 }
   /**
