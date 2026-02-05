@@ -28,7 +28,7 @@ export const askGemini = async (prompt: string) => {
     
     // 3. 콘텐츠 생성
     
-    const response = await result.response;
+  const response = await result.response;
   console.log("1. 텍스트 내용:", response.text());
   console.log("2. 종료 사유 (예: STOP, MAX_TOKENS):", response.candidates?.[0].finishReason);
   console.log("3. 토큰 사용량:", response.usageMetadata);

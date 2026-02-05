@@ -1,3 +1,4 @@
+import KakaoRedirect from '@/components/KakaoRedirect';
 import { Analytics } from '@vercel/analytics/react';
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <KakaoRedirect /> {/* ✅ 클라이언트 로직만 여기서 실행 */}
         {children}
         <Analytics />
         {/* 모든 페이지에 공통으로 들어가는 구조화 데이터(SEO) */}
