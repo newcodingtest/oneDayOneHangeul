@@ -22,6 +22,30 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  title: "Daily Korean",
+  description: "Let’s study one Korean sentence every day!",
+  openGraph: {
+    title: "My Sentence of the Day",
+    description: "Let’s study one Korean sentence every day!",
+    url: "https://one-day-one-language-one-grammar-qa.vercel.app/", // 배포된 실제 주소
+    siteName: "Daily Korean",
+    images: [
+      {
+        url: "/oneDayKorean.png", // public 폴더에 저장한 이미지 경로
+        width: 1200,
+        height: 630,
+        alt: "Service Thumnail",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+
+  //SEO 설정
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/oneDayKorean.png',
+  },
 };
 
 export default function RootLayout({
