@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "My Sentence of the Day",
     description: "Let’s study one Korean sentence every day!",
-    url: "https://one-day-one-language-one-grammar-qa.vercel.app/", // 배포된 실제 주소
+    url: "https://daliy-korean.vercel.app/", // 배포된 실제 주소
     siteName: "Daily Korean",
     images: [
       {
@@ -61,7 +61,23 @@ export default function RootLayout({
         <KakaoRedirect /> {/* ✅ 클라이언트 로직만 여기서 실행 */}
         {children}
         <Analytics />
-        {/* 모든 페이지에 공통으로 들어가는 구조화 데이터(SEO) */}
+         {/* 모든 페이지에 공통으로 들어가는 구조화 데이터(SEO) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite", 
+              "name": "하루 한번 영어",
+              "url": "https://daliy-korean.vercel.app/",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://daliy-korean.vercel.app/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            }),
+          }}
+        />
 
       </body>
     </html>
