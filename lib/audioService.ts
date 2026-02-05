@@ -18,77 +18,66 @@ class AudioService {
 
 async play(text: string, options?: AudioServiceOptions): Promise<void> {
   const synthesis = window.speechSynthesis;
-
   if (!synthesis) return;
 
-  // 1. [모바일 필수] 이전 음성을 확실히 종료하고 엔진을 깨움
   synthesis.cancel();
   synthesis.resume(); 
 
   const getKoreanVoices = (): Promise<SpeechSynthesisVoice[]> => {
     return new Promise((resolve) => {
       let voices = synthesis.getVoices();
-      if (voices.length > 0) {
-        resolve(voices.filter(v => v.lang.includes('ko')));
+      // [핵심] lang에 'ko'가 포함된 보이스만 필터링해서 추출
+      const filtered = voices.filter(v => v.lang.toLowerCase().includes('ko'));
+      
+      if (filtered.length > 0) {
+        resolve(filtered);
       } else {
-        // 모바일 브라우저는 보이스 로딩이 늦는 경우가 많음
         synthesis.onvoiceschanged = () => {
-          resolve(synthesis.getVoices().filter(v => v.lang.includes('ko')));
+          const retryFiltered = synthesis.getVoices().filter(v => v.lang.toLowerCase().includes('ko'));
+          resolve(retryFiltered);
         };
+        // 0.5초 대기 후에도 없으면 빈 배열 반환 (무한 대기 방지)
+        setTimeout(() => resolve(synthesis.getVoices().filter(v => v.lang.toLowerCase().includes('ko'))), 500);
       }
     });
   };
 
   const koVoices = await getKoreanVoices();
+  
+  // 만약 한국어 보이스를 아예 못 찾았다면 재생 중단 (영어 발음 방지)
+  if (koVoices.length === 0) {
+    console.warn("한국어 음성 엔진을 찾을 수 없습니다. 기기 설정을 확인해주세요.");
+    return;
+  }
+
   const utterance = new SpeechSynthesisUtterance(text);
+  
+  // [안드로이드 전용 최적화 매칭]
+  // 안드로이드는 구글 엔진(Google)과 삼성 엔진(Samsung) 순서로 찾되, 
+  // 반드시 한국어(ko)인 것만 골라냅니다.
+  const selectedVoice = 
+    koVoices.find(v => v.name.toLowerCase().includes('google')) || 
+    koVoices.find(v => v.name.toLowerCase().includes('samsung')) ||
+    koVoices[0];
 
-  // 2. [기기별 최적 보이스 강제 지정]
-  const ua = navigator.userAgent.toLowerCase();
-  const isIOS = /iphone|ipad|ipod/.test(ua);
-  const isAndroid = /android/.test(ua);
-
-  let selectedVoice = null;
-
-  if (isIOS) {
-    // iOS: 'Siri' 보이스가 압도적으로 자연스럽습니다. (Siri > Enhanced > Yuna)
-    selectedVoice = 
-      koVoices.find(v => v.name.includes('Siri')) || 
-      koVoices.find(v => v.name.includes('Enhanced')) ||
-      koVoices.find(v => v.name.includes('Yuna')) ||
-      koVoices[0];
-    
-    // iOS는 1.0 속도에서 발음이 가장 정확합니다.
-    utterance.rate = options?.rate || 1.0; 
-  } else if (isAndroid) {
-    // 안드로이드: Google 엔진이 가장 정확합니다. 
-    // 삼성 엔진은 가끔 영어식으로 읽는 버그가 있어 Google을 우선합니다.
-    selectedVoice = 
-      koVoices.find(v => v.name.toLowerCase().includes('google')) || 
-      koVoices.find(v => v.name.toLowerCase().includes('samsung')) ||
-      koVoices[0];
-
-    // 안드로이드는 약간 천천히 읽어야 한국어 성조가 선명합니다.
-    utterance.rate = options?.rate || 0.85; 
-  }
-
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-    utterance.lang = selectedVoice.lang; // 보이스와 언어 설정을 일치시킴
-  } else {
-    utterance.lang = 'ko-KR';
-  }
-
+  utterance.voice = selectedVoice;
+  utterance.lang = 'ko-KR'; // 명시적으로 한 번 더 지정
+  
+  // 안드로이드에서 영어처럼 들리는 현상을 방지하기 위해 
+  // 피치와 속도를 한국어 정석 발음에 맞춥니다.
+  utterance.rate = options?.rate || 0.9; 
   utterance.pitch = 1.0;
-  utterance.volume = 1.0;
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     utterance.onend = () => resolve();
-    utterance.onerror = (e) => reject(e);
+    utterance.onerror = () => {
+      synthesis.cancel();
+      resolve();
+    };
 
-    // 3. [모바일 핵심] 큐 엉킴 방지를 위해 짧은 지연 후 실행
     setTimeout(() => {
       synthesis.speak(utterance);
-    }, isIOS ? 100 : 50);
+    }, 100);
   });
 }
 
