@@ -16,8 +16,8 @@ class AudioService {
     lang: 'ko-KR', // Google TTS는 'en-US' 대신 'en'을 기본으로 사용 가능
   };
 
-async function play(text: string, options?: { rate?: number }) {
-  const synthesis = window.speechSynthesis;
+async play(text: string, options?: { rate?: number }) {
+  const synthesis: SpeechSynthesis = window.speechSynthesis;
 
   const loadVoices = (timeoutMs = 1200) =>
     new Promise<SpeechSynthesisVoice[]>((resolve) => {
@@ -31,12 +31,11 @@ async function play(text: string, options?: { rate?: number }) {
       };
 
       // iOS/Chrome 모두에서 onvoiceschanged가 안 뜨는 케이스가 있어 폴링 병행
-      if ("addEventListener" in synthesis) {
-        // @ts-ignore
-        synthesis.addEventListener("voiceschanged", tryResolve, { once: true });
-      } else {
-        synthesis.onvoiceschanged = tryResolve;
-      }
+      synthesis.addEventListener(
+          "voiceschanged",
+          () => resolve(synthesis.getVoices()),
+          { once: true }
+        );
 
       tryResolve();
     });
@@ -105,10 +104,14 @@ async function play(text: string, options?: { rate?: number }) {
     setTimeout(() => synthesis.speak(utterance), delay);
   });
 }
+
+
+
+
   /**
    * 재생 중지
    */
-  stop(): void {
+stop(): void {
  if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio.currentTime = 0;
