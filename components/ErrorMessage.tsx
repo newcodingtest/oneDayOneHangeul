@@ -10,7 +10,7 @@ export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center px-4">
       <div className="text-center bg-white p-6 sm:p-8 rounded-2xl shadow-lg max-w-md w-full">
         <div className="text-red-500 text-5xl mb-4">⚠️</div>
-        <h2 className="text-xl font-bold text-gray-800 mb-2">오류가 발생했습니다</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">An error has occurred</h2>
         <p className="text-gray-600 mb-4">{message}</p>
         <button
           onClick={onRetry}

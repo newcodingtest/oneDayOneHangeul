@@ -16,7 +16,7 @@ class AudioService {
     lang: 'ko-KR', // Google TTS는 'en-US' 대신 'en'을 기본으로 사용 가능
   };
 
-async playV1(text: string, options?: AudioServiceOptions): Promise<void> {
+async play(text: string, options?: AudioServiceOptions): Promise<void> {
 // 음성 목록을 가져오는 헬퍼 함수
   const getKoreanVoice = (): SpeechSynthesisVoice | undefined => {
     const voices = window.speechSynthesis.getVoices();
