@@ -17,72 +17,81 @@ class AudioService {
   };
 
 async play(text: string, options?: AudioServiceOptions): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      return reject(new Error('지원하지 않는 브라우저입니다.'));
-    }
+  // 1. 보이스 목록을 가져오는 시점을 보장하는 헬퍼 함수
+  const getVoicesSafe = (): Promise<SpeechSynthesisVoice[]> => {
+    return new Promise((resolve) => {
+      let voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        resolve(voices);
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => {
+          voices = window.speechSynthesis.getVoices();
+          resolve(voices);
+        };
+      }
+    });
+  };
+
+  if (typeof window === 'undefined' || !window.speechSynthesis) {
+    throw new Error('지원하지 않는 브라우저입니다.');
+  }
+
+  // 안드로이드/iOS 공통: 이전 재생 즉시 중단
+  window.speechSynthesis.cancel();
+
+  const voices = await getVoicesSafe();
+  const utterance = new SpeechSynthesisUtterance(text);
+  
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+
+  // 2. [애플 해결] 먹먹함 방지: 고음질(Enhanced) 우선 순위
+  let selectedVoice = null;
+  if (isIOS) {
+    // 'Siri' 보이스나 'Enhanced'가 붙은 보이스가 훨씬 선명합니다.
+    selectedVoice = 
+      voices.find(v => v.lang === 'ko-KR' && v.name.includes('Siri')) ||
+      voices.find(v => v.lang === 'ko-KR' && v.name.includes('Enhanced')) ||
+      voices.find(v => v.name.includes('Yuna')) ||
+      voices.find(v => v.lang.startsWith('ko'));
     
-    // 현재 진행 중인 음성 즉시 취소
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
+    utterance.rate = options?.rate || 1.0; 
+    utterance.pitch = 1.0;
+  } 
+  // 3. [안드로이드 해결] 무음 방지: Google 엔진 강제 및 음량 설정
+  else if (isAndroid) {
+    selectedVoice = 
+      voices.find(v => v.name.toLowerCase().includes('google') && v.lang.startsWith('ko')) ||
+      voices.find(v => v.lang.startsWith('ko'));
     
-    const ua = navigator.userAgent.toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(ua);
-    const isAndroid = /android/.test(ua);
+    // 안드로이드는 rate가 너무 낮으면 소리가 깨지거나 안 나올 수 있음
+    utterance.rate = options?.rate || 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0; // 볼륨 명시
+  } else {
+    selectedVoice = voices.find(v => v.lang === 'ko-KR') || voices[0];
+    utterance.rate = options?.rate || 1.0;
+  }
 
-    // 1. 한국어 학습에 최적화된 속도/피치 설정
-    // 외국인 학습자용이므로 기본 속도를 약간 낮추는 것이 가독성에 좋습니다.
-    if (isIOS) {
-      utterance.rate = options?.rate || 0.9; // iOS는 0.9가 적당
-      utterance.pitch = 1.0; 
-    } else if (isAndroid) {
-      utterance.rate = options?.rate || 0.85; // 안드로이드 Google 엔진은 약간 느릴 때 선명함
-      utterance.pitch = 1.0;
-    } else {
-      utterance.rate = options?.rate || 0.9;
-      utterance.pitch = options?.pitch || 1.0;
-    }
-
-    // 언어 설정 고정 (중요)
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+    utterance.lang = selectedVoice.lang; // 보이스의 언어 설정과 일치시킴
+  } else {
     utterance.lang = 'ko-KR';
+  }
 
-    // 2. 기기별 한국어 보이스 매칭 로직
-    let selectedVoice = null;
-
-    if (isIOS) {
-      // iOS: Yuna(유나)가 한국어 표준 발음에 가장 가깝습니다.
-      selectedVoice = 
-        voices.find(v => v.name.includes('Yuna') && v.name.includes('Enhanced')) ||
-        voices.find(v => v.name.includes('Yuna')) ||
-        voices.find(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
-    } else if (isAndroid) {
-      // 안드로이드: Google 한국어 엔진이 억양이 가장 자연스럽습니다.
-      // 간혹 삼성 기기에서는 Samsung 엔진이 우선될 수 있어 Google을 먼저 찾습니다.
-      selectedVoice = 
-        voices.find(v => v.name.toLowerCase().includes('google') && v.lang.startsWith('ko')) ||
-        voices.find(v => v.name.toLowerCase().includes('samsung') && v.lang.startsWith('ko')) ||
-        voices.find(v => v.lang.startsWith('ko'));
-    } else {
-      // PC/Chrome: Google 한국어(ko-KR) 우선
-      selectedVoice = 
-        voices.find(v => v.name.includes('Google') && v.lang === 'ko-KR') ||
-        voices.find(v => v.lang === 'ko-KR');
-    }
-
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
-
+  return new Promise((resolve, reject) => {
     utterance.onend = () => resolve();
-    utterance.onerror = (e) => reject(e);
+    utterance.onerror = (e) => {
+      console.error('TTS 에러 발생:', e);
+      reject(e);
+    };
 
-    // iOS/Android 모바일 브라우저의 끊김 방지를 위한 미세한 딜레이
-    const playDelay = (isIOS || isAndroid) ? 100 : 0;
+    // 4. [모바일 공통] 핵심: 큐가 꼬이지 않도록 아주 짧은 지연 후 실행
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
-    }, playDelay);
+    }, 150); 
   });
 }
 
