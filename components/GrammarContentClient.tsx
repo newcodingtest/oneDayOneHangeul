@@ -15,7 +15,7 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
   const playAudioV1 = async (text: string, id: number) => {
     try {
       setIsPlaying(id);
-      await audioService.speakFree(text, { rate: 0.9 });
+      await audioService.playNativeTTS(text);
       setIsPlaying(null);
     } catch (error) {
       console.error("재생 중 오류 발생:", error);
