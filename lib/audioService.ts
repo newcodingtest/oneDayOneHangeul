@@ -18,72 +18,51 @@ class AudioService {
 
 async play(text: string, options?: AudioServiceOptions): Promise<void> {
   const synthesis = window.speechSynthesis;
-
-  if (typeof window === 'undefined' || !synthesis) {
-    throw new Error('지원하지 않는 브라우저입니다.');
-  }
-
-  // 1. 인앱뷰에서 꼬인 큐를 풀기 위한 초기화
-  synthesis.cancel();
-
-  const getVoicesSafe = (): Promise<SpeechSynthesisVoice[]> => {
+  
+  // 1. 보이스 목록이 로드될 때까지 확실히 기다림
+  const getKoreanVoices = (): Promise<SpeechSynthesisVoice[]> => {
     return new Promise((resolve) => {
-      const voices = synthesis.getVoices();
-      if (voices.length > 0) resolve(voices);
-      synthesis.onvoiceschanged = () => resolve(synthesis.getVoices());
-      // 인앱뷰 대응: 0.1초 뒤에도 안 잡히면 일단 현재 목록 반환
-      setTimeout(() => resolve(synthesis.getVoices()), 100);
+      let voices = synthesis.getVoices();
+      if (voices.length > 0) {
+        resolve(voices.filter(v => v.lang.includes('ko')));
+      } else {
+        synthesis.onvoiceschanged = () => {
+          resolve(synthesis.getVoices().filter(v => v.lang.includes('ko')));
+        };
+      }
     });
   };
 
-  const voices = await getVoicesSafe();
+  const koVoices = await getKoreanVoices();
   const utterance = new SpeechSynthesisUtterance(text);
   
-  const ua = navigator.userAgent.toLowerCase();
-  const isIOS = /iphone|ipad|ipod/.test(ua);
-  const isKakao = /kakaotalk/.test(ua); // 카카오톡 인앱뷰 여부 확인
-
-  let selectedVoice = null;
-
-  if (isIOS) {
-    // 2. [인앱뷰 핵심] 우선순위를 훨씬 정교하게 세팅합니다.
-    // 'Siri'가 가장 자연스럽고, 그 다음이 'Enhanced', 마지막이 일반 'Yuna'입니다.
-    selectedVoice = 
-      voices.find(v => v.lang.includes('ko') && v.name.includes('Siri')) ||
-      voices.find(v => v.lang.includes('ko') && v.name.includes('Enhanced')) ||
-      voices.find(v => v.name.includes('Yuna')) ||
-      voices.find(v => v.lang === 'ko-KR');
-
-    // 3. [자연스러움 튜닝] 
-    // 인앱뷰는 소리가 뭉개질 수 있으므로 rate(속도)를 아주 미세하게 조정합니다.
-    // 1.0보다 0.95 정도가 한국어의 성조를 가장 잘 표현합니다.
-    utterance.rate = options?.rate || (isKakao ? 0.95 : 1.0);
-    utterance.pitch = 1.0; 
-  } else {
-    // 안드로이드 및 기타 기기 로직 (생략 가능하나 유지)
-    selectedVoice = voices.find(v => v.lang.includes('ko')) || voices[0];
-    utterance.rate = options?.rate || 1.0;
-  }
+  // 2. [핵심] 굴리는 발음 방지: 보이스 우선순위 강제 지정
+  // 이름에 'Siri', 'Google', 'Samsung'이 들어간 한국어 보이스가 진짜 한국인 발음입니다.
+  const selectedVoice = 
+    koVoices.find(v => v.name.includes('Siri')) ||               // iOS 1순위 (가장 자연스러움)
+    koVoices.find(v => v.name.includes('Google')) ||             // Android 1순위 (정석 발음)
+    koVoices.find(v => v.name.includes('Enhanced')) ||           // 고음질 보이스
+    koVoices.find(v => v.name.includes('Yuna')) ||               // 기본 한국어 보이스
+    koVoices[0];                                                 // 그 외 한국어 보이스
 
   if (selectedVoice) {
     utterance.voice = selectedVoice;
-    utterance.lang = selectedVoice.lang;
+    utterance.lang = 'ko-KR'; // 언어 설정도 반드시 ko-KR로 명시
   } else {
+    // 한국어 보이스를 아예 못 찾았을 때만 기본값 설정 (이때 굴리는 발음이 날 수 있음)
     utterance.lang = 'ko-KR';
   }
 
-  return new Promise((resolve, reject) => {
-    utterance.onend = () => resolve();
-    utterance.onerror = (e) => reject(e);
+  // 3. 발음 속도 최적화 (외국인이 듣기 좋게 약간 천천히)
+  utterance.rate = options?.rate || 0.9; 
+  utterance.pitch = 1.0;
 
-    // 4. [중요] 인앱뷰는 하드웨어 가속이 느려 딜레이를 더 줘야 소리가 안 씹힙니다.
-    const delay = isKakao ? 250 : 150;
-    setTimeout(() => {
-      synthesis.speak(utterance);
-    }, delay);
+  return new Promise((resolve) => {
+    utterance.onend = () => resolve();
+    synthesis.cancel(); // 큐 초기화
+    setTimeout(() => synthesis.speak(utterance), 50);
   });
 }
-
   /**
    * 재생 중지
    */
