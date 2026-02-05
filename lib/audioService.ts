@@ -17,57 +17,74 @@ class AudioService {
   };
 
 async play(text: string, options?: AudioServiceOptions): Promise<void> {
-// 음성 목록을 가져오는 헬퍼 함수
-  const getKoreanVoice = (): SpeechSynthesisVoice | undefined => {
-    const voices = window.speechSynthesis.getVoices();
-    const koVoices = voices.filter(v => v.lang.startsWith('ko'));
-    
-    return (
-      koVoices.find(v => v.name.includes('Google') && v.lang === 'ko-KR') ||
-      koVoices.find(v => (v.name.includes('Apple') || v.name.includes('Yuna')) && v.lang === 'ko-KR') ||
-      koVoices.find(v => v.lang === 'ko-KR') ||
-      koVoices[0]
-    );
-  };
-
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       return reject(new Error('지원하지 않는 브라우저입니다.'));
     }
-
+    
+    // 현재 진행 중인 음성 즉시 취소
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = options?.lang || 'ko-KR';
+    const voices = window.speechSynthesis.getVoices();
+    
+    const ua = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(ua);
+    const isAndroid = /android/.test(ua);
 
-    // 모바일/PC 설정
-    const isMobile = this.checkIsMobile();
-    utterance.rate = options?.rate || (isMobile ? 0.85 : 0.9);
-    utterance.pitch = options?.pitch || (isMobile ? 1.1 : 1.0);
-
-    // [수정 핵심] 음성을 설정하는 내부 함수
-    const setVoiceAndSpeak = () => {
-      const selectedVoice = getKoreanVoice();
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-      
-      utterance.onend = () => resolve();
-      utterance.onerror = (e) => reject(e);
-      window.speechSynthesis.speak(utterance);
-    };
-
-    // 음성 목록이 이미 로드되었는지 확인
-    if (window.speechSynthesis.getVoices().length > 0) {
-      setVoiceAndSpeak();
+    // 1. 한국어 학습에 최적화된 속도/피치 설정
+    // 외국인 학습자용이므로 기본 속도를 약간 낮추는 것이 가독성에 좋습니다.
+    if (isIOS) {
+      utterance.rate = options?.rate || 0.9; // iOS는 0.9가 적당
+      utterance.pitch = 1.0; 
+    } else if (isAndroid) {
+      utterance.rate = options?.rate || 0.85; // 안드로이드 Google 엔진은 약간 느릴 때 선명함
+      utterance.pitch = 1.0;
     } else {
-      // 로드되지 않았다면 onvoiceschanged 이벤트 발생 시 실행
-      window.speechSynthesis.onvoiceschanged = () => {
-        setVoiceAndSpeak();
-      };
+      utterance.rate = options?.rate || 0.9;
+      utterance.pitch = options?.pitch || 1.0;
     }
+
+    // 언어 설정 고정 (중요)
+    utterance.lang = 'ko-KR';
+
+    // 2. 기기별 한국어 보이스 매칭 로직
+    let selectedVoice = null;
+
+    if (isIOS) {
+      // iOS: Yuna(유나)가 한국어 표준 발음에 가장 가깝습니다.
+      selectedVoice = 
+        voices.find(v => v.name.includes('Yuna') && v.name.includes('Enhanced')) ||
+        voices.find(v => v.name.includes('Yuna')) ||
+        voices.find(v => v.lang === 'ko-KR' || v.lang === 'ko_KR');
+    } else if (isAndroid) {
+      // 안드로이드: Google 한국어 엔진이 억양이 가장 자연스럽습니다.
+      // 간혹 삼성 기기에서는 Samsung 엔진이 우선될 수 있어 Google을 먼저 찾습니다.
+      selectedVoice = 
+        voices.find(v => v.name.toLowerCase().includes('google') && v.lang.startsWith('ko')) ||
+        voices.find(v => v.name.toLowerCase().includes('samsung') && v.lang.startsWith('ko')) ||
+        voices.find(v => v.lang.startsWith('ko'));
+    } else {
+      // PC/Chrome: Google 한국어(ko-KR) 우선
+      selectedVoice = 
+        voices.find(v => v.name.includes('Google') && v.lang === 'ko-KR') ||
+        voices.find(v => v.lang === 'ko-KR');
+    }
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+
+    utterance.onend = () => resolve();
+    utterance.onerror = (e) => reject(e);
+
+    // iOS/Android 모바일 브라우저의 끊김 방지를 위한 미세한 딜레이
+    const playDelay = (isIOS || isAndroid) ? 100 : 0;
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+    }, playDelay);
   });
-  }
+}
 
   /**
    * 재생 중지
