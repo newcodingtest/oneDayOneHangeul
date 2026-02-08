@@ -3,7 +3,7 @@ import Footer from '@/components/Footer';
 import GrammarContentClient from '@/components/GrammarContentClient'; // 새로 만들 파일
 import Header from '@/components/Header';
 
-export const revalidate = 86400;
+//export const revalidate = 86400;
 export const dynamic = 'force-dynamic';
 
 async function getGrammarData(month:number, day: number) {
