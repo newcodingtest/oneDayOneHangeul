@@ -17,83 +17,57 @@ class AudioService {
   };
 
 async play(text: string, options?: AudioServiceOptions): Promise<void> {
-  // 1. 보이스 목록을 가져오는 시점을 보장하는 헬퍼 함수
-  const getVoicesSafe = (): Promise<SpeechSynthesisVoice[]> => {
-    return new Promise((resolve) => {
-      let voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        resolve(voices);
-      } else {
-        window.speechSynthesis.onvoiceschanged = () => {
-          voices = window.speechSynthesis.getVoices();
-          resolve(voices);
-        };
-      }
-    });
+// 음성 목록을 가져오는 헬퍼 함수
+  const getKoreanVoice = (): SpeechSynthesisVoice | undefined => {
+    const voices = window.speechSynthesis.getVoices();
+    const koVoices = voices.filter(v => v.lang.startsWith('ko'));
+    
+    return (
+      koVoices.find(v => v.name.includes('Google') && v.lang === 'ko-KR') ||
+      koVoices.find(v => (v.name.includes('Apple') || v.name.includes('Yuna')) && v.lang === 'ko-KR') ||
+      koVoices.find(v => v.lang === 'ko-KR') ||
+      koVoices[0]
+    );
   };
 
-  if (typeof window === 'undefined' || !window.speechSynthesis) {
-    throw new Error('지원하지 않는 브라우저입니다.');
-  }
-
-  // 안드로이드/iOS 공통: 이전 재생 즉시 중단
-  window.speechSynthesis.cancel();
-
-  const voices = await getVoicesSafe();
-  const utterance = new SpeechSynthesisUtterance(text);
-  
-  const ua = navigator.userAgent.toLowerCase();
-  const isIOS = /iphone|ipad|ipod/.test(ua);
-  const isAndroid = /android/.test(ua);
-
-  // 2. [애플 해결] 먹먹함 방지: 고음질(Enhanced) 우선 순위
-  let selectedVoice = null;
-  if (isIOS) {
-    // 'Siri' 보이스나 'Enhanced'가 붙은 보이스가 훨씬 선명합니다.
-    selectedVoice = 
-      voices.find(v => v.lang === 'ko-KR' && v.name.includes('Siri')) ||
-      voices.find(v => v.lang === 'ko-KR' && v.name.includes('Enhanced')) ||
-      voices.find(v => v.name.includes('Yuna')) ||
-      voices.find(v => v.lang.startsWith('ko'));
-    
-    utterance.rate = options?.rate || 1.0; 
-    utterance.pitch = 1.0;
-  } 
-  // 3. [안드로이드 해결] 무음 방지: Google 엔진 강제 및 음량 설정
-  else if (isAndroid) {
-    selectedVoice = 
-      voices.find(v => v.name.toLowerCase().includes('google') && v.lang.startsWith('ko')) ||
-      voices.find(v => v.lang.startsWith('ko'));
-    
-    // 안드로이드는 rate가 너무 낮으면 소리가 깨지거나 안 나올 수 있음
-    utterance.rate = options?.rate || 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0; // 볼륨 명시
-  } else {
-    selectedVoice = voices.find(v => v.lang === 'ko-KR') || voices[0];
-    utterance.rate = options?.rate || 1.0;
-  }
-
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
-    utterance.lang = selectedVoice.lang; // 보이스의 언어 설정과 일치시킴
-  } else {
-    utterance.lang = 'ko-KR';
-  }
-
   return new Promise((resolve, reject) => {
-    utterance.onend = () => resolve();
-    utterance.onerror = (e) => {
-      console.error('TTS 에러 발생:', e);
-      reject(e);
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      return reject(new Error('지원하지 않는 브라우저입니다.'));
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = options?.lang || 'ko-KR';
+
+    // 모바일/PC 설정
+    const isMobile = this.checkIsMobile();
+    utterance.rate = options?.rate || (isMobile ? 0.85 : 0.9);
+    utterance.pitch = options?.pitch || (isMobile ? 1.1 : 1.0);
+
+    // [수정 핵심] 음성을 설정하는 내부 함수
+    const setVoiceAndSpeak = () => {
+      const selectedVoice = getKoreanVoice();
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+      
+      utterance.onend = () => resolve();
+      utterance.onerror = (e) => reject(e);
+      window.speechSynthesis.speak(utterance);
     };
 
-    // 4. [모바일 공통] 핵심: 큐가 꼬이지 않도록 아주 짧은 지연 후 실행
-    setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
-    }, 150); 
+    // 음성 목록이 이미 로드되었는지 확인
+    if (window.speechSynthesis.getVoices().length > 0) {
+      setVoiceAndSpeak();
+    } else {
+      // 로드되지 않았다면 onvoiceschanged 이벤트 발생 시 실행
+      window.speechSynthesis.onvoiceschanged = () => {
+        setVoiceAndSpeak();
+      };
+    }
   });
-}
+  }
 
   /**
    * 재생 중지
