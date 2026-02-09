@@ -5,6 +5,7 @@ import { Volume2 } from './icons';
 interface ExampleSentence {
   id: number;
   text: string;
+  phonetic: string;
   translation: string;
 }
 
@@ -35,7 +36,7 @@ export default function ExampleSentences({ examples, playingId, onPlay }: Exampl
                     {example.id}
                   </span>
                   <p className="text-base sm:text-lg text-gray-800 font-medium leading-relaxed break-words">
-                    {example.text}
+                    `{example.text}  ({example.phonetic})`
                   </p>
                 </div>
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed break-words ml-0 sm:ml-8">

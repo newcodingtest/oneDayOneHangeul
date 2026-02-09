@@ -30,6 +30,7 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
       <SentenceCard
         sentence={lesson.sentence}
         translation={lesson.sentenceTranslation}
+        phonetic={lesson.phonetic}
         isPlaying={isPlaying === 0}
         onPlay={() => playAudioV1(lesson.sentence, 0)}
       />
