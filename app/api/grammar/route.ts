@@ -7,7 +7,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 // ✅ 서버 캐시 유효 시간 설정 (단위: 초)
 // 86400초 = 24시간
 //export const revalidate = 86400;
-export const dynamic = 'force-static'; // 이 파일은 무조건 정적 결과물로 취급해!
+export const revalidate = 60;//1분
+//export const dynamic = 'force-static'; // 이 파일은 무조건 정적 결과물로 취급해!
 
 
 export async function GET(request: NextRequest) {

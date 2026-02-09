@@ -1,9 +1,9 @@
 // lib/grammar/getGrammarLesson.ts
-import { unstable_cache } from "next/cache";
 import { KOREAN_LEARNING_PROMPT } from "@/lib/prompts";
 import { getSampleLesson } from "@/mocks/grammar";
 import { supabaseService } from "@/service/databaseService";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { unstable_cache } from "next/cache";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -20,6 +20,7 @@ function secondsUntilNextMidnightKST() {
 }
 
 async function askGemini(prompt: string) {
+  console.log("잼미니 물어봐~")
   const model = genAI.getGenerativeModel({
     model: process.env.GEMINI_MODEL as string,
     generationConfig: {
@@ -67,3 +68,4 @@ export async function getGrammarLesson(year: number, month: number, day: number)
 
   return cached();
 }
+

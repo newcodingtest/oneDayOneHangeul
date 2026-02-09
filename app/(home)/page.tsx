@@ -2,29 +2,22 @@
 import Footer from '@/components/Footer';
 import GrammarContentClient from '@/components/GrammarContentClient'; // 새로 만들 파일
 import Header from '@/components/Header';
+import { getGrammarLesson } from '@/lib/getGrammarLesson';
 
-//export const revalidate = 86400;
-export const dynamic = 'force-dynamic';
+export const revalidate = 86400;
 
-async function getGrammarData(month:number, day: number) {
-  // ⚠️ 서버에서 fetch할 때는 전체 URL이 필요합니다. 
-  // 로컬 테스트용이라면 http://localhost:3000 을 앞에 붙여주세요.
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/grammar?month=${month}&day=${day}`, {
-    next: { revalidate: 86400 }
-  });
-  
-  if (!res.ok) throw new Error('데이터 로드 실패');
-  return res.json();
-}
 
 export default async function DailyGrammarPage() {
-  const date = new Date();
-  const month = date.getMonth();
-  const day = date.getDate();
+// 2. 한국 시간(KST) 계산 (현재 시간 2026-02-09 기준)
+  const now = new Date();
+  const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  
+  const year = kstDate.getUTCFullYear();
+  const month = kstDate.getUTCMonth() + 1;
+  const day = kstDate.getUTCDate();
   
   console.log("day: ", day);
-  const lesson = await getGrammarData(month, day);
+  const lesson = await getGrammarLesson(year, month, day);
 
   if (!lesson) return null;
 
