@@ -47,6 +47,7 @@ async function generateAndPersist(year: number, month: number, day: number) {
       ? await askGemini(prompt)
       : JSON.stringify(getSampleLesson(year, month, day));
 
+  console.log("잼미니 데이터: ", raw);
   const cleanContent = cleanJson(raw);
   const grammarData = JSON.parse(cleanContent);
 

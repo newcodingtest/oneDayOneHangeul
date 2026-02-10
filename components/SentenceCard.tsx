@@ -26,7 +26,10 @@ export default function SentenceCard({
 
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-5 lg:p-6 rounded-lg sm:rounded-xl mb-4 border border-blue-100">
         <p className="text-lg sm:text-xl lg:text-2xl text-gray-800 leading-relaxed mb-3 sm:mb-4 font-medium break-words">
-          {sentence} {phonetic}
+          {sentence}
+        </p>
+        <p className="text-lg sm:text-xl lg:text-2xl text-gray-800 leading-relaxed mb-3 sm:mb-4 font-medium break-words">
+          ({phonetic})
         </p>
         <p className="text-sm sm:text-base lg:text-lg text-gray-600 leading-relaxed break-words">
           {translation}
