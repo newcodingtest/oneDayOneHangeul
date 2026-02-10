@@ -24,6 +24,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Daily Korean",
   description: "Let’s study one Korean sentence every day!",
+  verification: {
+    google: "qj-rap9znKkxa8CU4R8DHPHl0_FLUSh84OJZ8y4RNtA",
+  },
   openGraph: {
     title: "My Sentence of the Day",
     description: "Let’s study one Korean sentence every day!",
@@ -69,10 +72,10 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite", 
               "name": "하루 한번 영어",
-              "url": "https://daliy-korean.vercel.app/",
+              "url": "https://daily-korean.vercel.app/",
               "potentialAction": {
                 "@type": "SearchAction",
-                "target": "https://daliy-korean.vercel.app/search?q={search_term_string}",
+                "target": "https://daily-korean.vercel.app/search?q={search_term_string}",
                 "query-input": "required name=search_term_string"
               }
             }),
