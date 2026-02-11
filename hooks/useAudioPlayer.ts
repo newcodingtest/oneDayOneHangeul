@@ -1,6 +1,6 @@
 // hooks/useAudioPlayer.ts
 
-import { audioService } from '@/lib/audioService';
+import { audioService } from '@/service/audioService';
 import { useState } from 'react';
 
 export function useAudioPlayer() {

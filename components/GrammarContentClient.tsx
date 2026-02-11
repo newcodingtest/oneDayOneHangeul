@@ -5,7 +5,7 @@ import DayCounter from '@/components/DayCounter';
 import ExampleSentences from '@/components/ExampleSentences';
 import GrammarExplanation from '@/components/GrammarExplanation';
 import SentenceCard from '@/components/SentenceCard';
-import { audioService } from '@/lib/audioService';
+import { audioService } from '@/service/audioService';
 import { GrammarLesson } from '@/types/grammer';
 import { useState } from 'react';
 
