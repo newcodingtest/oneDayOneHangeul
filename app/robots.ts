@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://daily-english-sentence.vercel.app/sitemap.xml',
+    sitemap: 'https://daily-korean.vercel.app/sitemap.xml',
   };
 }

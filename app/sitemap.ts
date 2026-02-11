@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next';
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: 'https://daily-english-sentence.vercel.app/',
+      url: 'https://daily-korean.vercel.app/',
       lastModified: new Date(),
     },
   ];
