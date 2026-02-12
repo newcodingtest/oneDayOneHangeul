@@ -17,7 +17,9 @@ export default function DayCounter({ date, day }: DayCounterProps) {
             <span className="text-xs sm:text-sm">{date}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-600">Day {day}</h2>
-          <p>🔊 On mobile, pronunciation may sound less natural. You’ll hear clearer pronunciation when accessing on a PC.</p>
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">
+              🔊 On mobile, pronunciation may sound less natural. You’ll hear clearer pronunciation when accessing on a PC.
+            </p>
         </div>
       </div>
     </div>
