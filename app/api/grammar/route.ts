@@ -1,28 +1,22 @@
-// app/api/grammar/route.ts
 import { getGrammarLesson } from "@/lib/getGrammarLesson";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextRequest, NextResponse } from 'next/server';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-// ✅ 서버 캐시 유효 시간 설정 (단위: 초)
-// 86400초 = 24시간
-//export const revalidate = 86400;
-export const revalidate = 60;//1분
-//export const dynamic = 'force-static'; // 이 파일은 무조건 정적 결과물로 취급해!
+import { NextResponse } from "next/server";
 
 
-export async function GET(request: NextRequest) {
-    const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
+export async function GET() {
+  console.log("API 들어왔음");
 
-  // (선택) 쿼리로 특정 날짜를 테스트하고 싶으면:
-  // const { searchParams } = new URL(request.url);
-  // const y = Number(searchParams.get("year")) || year;
-  // const m = Number(searchParams.get("month")) || month;
-  // const d = Number(searchParams.get("day")) || day;
+  try {
+    const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const year = kst.getUTCFullYear();
+    const month = kst.getUTCMonth() + 1;
+    const day = kst.getUTCDate();
 
-  const data = await getGrammarLesson(year, month, day);
-  return NextResponse.json(data);
+    const lesson = await getGrammarLesson(year, month, day);
+
+    console.log("API 응답 성공:", lesson);
+    return NextResponse.json(lesson);
+  } catch (err) {
+    console.error("API 호출 실패:", err);
+    return NextResponse.error();
+  }
 }

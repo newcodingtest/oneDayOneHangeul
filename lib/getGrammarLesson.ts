@@ -1,7 +1,7 @@
 // lib/grammar/getGrammarLesson.ts
 import { KOREAN_LEARNING_PROMPT } from "@/lib/prompts";
 import { getSampleLesson } from "@/mocks/grammar";
-import { supabaseService } from "@/service/databaseService";
+import { supabaseService } from "@/repository/databaseService";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { unstable_cache } from "next/cache";
 
