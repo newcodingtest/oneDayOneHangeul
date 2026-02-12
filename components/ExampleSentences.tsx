@@ -12,10 +12,10 @@ interface ExampleSentence {
 interface ExampleSentencesProps {
   examples: ExampleSentence[];
   playingId: number | null;
-  onPlay: (text: string, id: number) => void;
+  onPlay: (type: string,  id: number) => void;
 }
 
-export default function ExampleSentences({ examples, playingId, onPlay }: ExampleSentencesProps) {
+export default function ExampleSentences({examples, playingId, onPlay }: ExampleSentencesProps) {
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl shadow-md p-4 sm:p-5 lg:p-6 border border-gray-200">
       <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-3 sm:mb-4 flex items-center gap-2">

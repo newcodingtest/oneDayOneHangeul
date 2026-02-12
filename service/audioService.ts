@@ -8,10 +8,12 @@ interface AudioServiceOptions {
   lang?: string;
   rate?: number;
   pitch?: number;
+  voice?: string; // <- 이 줄을 추가하세요!
 }
 
 class AudioService {
   private currentAudio: HTMLAudioElement | null = null;
+  private abortController: AbortController | null = null;
   private defaultOptions: AudioServiceOptions = {
     lang: 'ko-KR', // Google TTS는 'en-US' 대신 'en'을 기본으로 사용 가능
   };
@@ -69,6 +71,86 @@ async play(text: string, options?: AudioServiceOptions): Promise<void> {
   });
   }
 
+  
+  // AudioService.ts 내의 수정된 play 함수
+async playEdgeTTS(date: string, type: string, id?: number): Promise<void> {
+  // 1. 이전 요청(Fetch) 취소
+  if (this.abortController) {
+    this.abortController.abort();
+  }
+  this.abortController = new AbortController();
+
+  // 2. 기존 재생 중인 소리 즉시 정지
+  if (this.currentAudio) {
+    this.currentAudio.pause();
+    this.currentAudio.src = ""; // 메모리 해제 및 로딩 중단
+    this.currentAudio.load();
+    this.currentAudio = null;
+  }
+
+  const params = new URLSearchParams({
+    date,
+    type,
+    ...(id && { id: id.toString() }),
+  });
+  
+  try {
+    // 3. fetch에 signal 전달 (광클 시 이전 요청 자동 취소)
+    const response = await fetch(`/api/tts?${params}`, {
+      signal: this.abortController.signal
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`서버 에러: ${errorData.error || response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    if (blob.size < 100) throw new Error("데이터 부족");
+
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    this.currentAudio = audio;
+
+    return new Promise((resolve, reject) => {
+      audio.volume = 1.0;
+
+      audio.oncanplaythrough = async () => {
+        try {
+          // 재생 시점에도 내가 '최신'인지 한 번 더 확인
+          if (this.currentAudio === audio) {
+            await audio.play();
+          }
+        } catch (e) { reject(e); }
+      };
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (this.currentAudio === audio) this.currentAudio = null;
+        resolve();
+      };
+
+      audio.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(e);
+      };
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
+          console.log("이전 요청이 취소되었습니다.");
+          return; 
+        }
+
+        // 2. 일반 에러 처리
+        if (error instanceof Error) {
+          console.error("Edge TTS 재생 에러 상세:", error.message);
+        } else {
+          console.error("알 수 없는 에러 발생:", error);
+        }
+        
+        throw error;
+  }
+}
   /**
    * 재생 중지
    */

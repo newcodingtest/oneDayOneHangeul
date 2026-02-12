@@ -4,6 +4,7 @@ import { getSampleLesson } from "@/mocks/grammar";
 import { supabaseService } from "@/repository/databaseService";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { unstable_cache } from "next/cache";
+import { generateTTSForLesson } from "./tts/generateTTSForLesson";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -51,6 +52,9 @@ async function generateAndPersist(year: number, month: number, day: number) {
   const cleanContent = cleanJson(raw);
   const grammarData = JSON.parse(cleanContent);
 
+  const mp3DataKey = `${year}_${month}_${day}`;
+  // mp3 파일 생성
+  generateTTSForLesson(grammarData, mp3DataKey);
   // ✅ 캐시 미스(처음 생성)일 때만 저장되도록 이 함수 안에서 저장
   await supabaseService.save(cleanContent);
 
