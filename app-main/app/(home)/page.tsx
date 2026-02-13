@@ -15,12 +15,16 @@ const [lesson, setLesson] = useState<GrammarLesson | null>(null);
         const res = await fetch("/api/grammar");
         const data: GrammarLesson = await res.json();
         setLesson(data);
-    const MP3_SERVICE_URL = process.env.NEXT_PUBLIC_MP3_SERVICE_URL || "http://localhost:3000";
-          const ttsResponse = await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
+
+          const ttsResponse = await fetch(`/api/tts/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ grammarData: data, mp3DataKey: "2026_2_13"}),
         });
+        
+        console.log(ttsResponse);
+
+        
       } catch (err) {
         console.error("Failed to fetch lesson:", err);
       }
