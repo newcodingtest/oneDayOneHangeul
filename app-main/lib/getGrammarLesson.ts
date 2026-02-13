@@ -60,7 +60,7 @@ async function generateAndPersist(year: number, month: number, day: number) {
         const ttsResponse = await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ grammarData, mp3DataKey }),
+          body: JSON.stringify({ grammarData: grammarData, mp3DataKey: mp3DataKey }),
         });
         
         // ⭐ 중요: 응답 바디를 끝까지 읽어야 '통신 완료'로 간주됩니다.
