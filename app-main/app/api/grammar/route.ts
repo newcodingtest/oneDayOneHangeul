@@ -1,12 +1,21 @@
-import { NextRequest } from "next/server";
+import { getGrammarLesson } from "@/lib/getGrammarLesson";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest){
-  const { grammarData, mp3DataKey } = await request.json();
 
-    const MP3_SERVICE_URL = process.env.NEXT_PUBLIC_MP3_SERVICE_URL || "http://localhost:3000";
-          const ttsResponse = await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ grammarData: grammarData, mp3DataKey: mp3DataKey}),
-        });
+export async function GET() {
+  console.log("API 들어왔음");
+  try {
+    const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const year = kst.getUTCFullYear();
+    const month = kst.getUTCMonth() + 1;
+    const day = kst.getUTCDate();
+
+    const lesson = await getGrammarLesson(year, month, day);
+
+    console.log("API 응답 성공:", lesson);
+    return NextResponse.json(lesson);
+  } catch (err) {
+    console.error("API 호출 실패:", err);
+    return NextResponse.error();
+  }
 }
