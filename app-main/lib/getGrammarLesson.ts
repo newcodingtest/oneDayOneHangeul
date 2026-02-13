@@ -56,25 +56,25 @@ async function generateAndPersist(year: number, month: number, day: number) {
   const MP3_SERVICE_URL = process.env.NEXT_PUBLIC_MP3_SERVICE_URL || "http://localhost:3000";
   //generateTTSForLesson(grammarData, mp3DataKey);
   console.log("파일 생성 위치: ", MP3_SERVICE_URL);
-    try {
-        const ttsResponse = await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ grammarData: grammarData, mp3DataKey: mp3DataKey }),
-        });
+    // try {
+    //     const ttsResponse = await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify({ grammarData: grammarData, mp3DataKey: mp3DataKey }),
+    //     });
         
-        // ⭐ 중요: 응답 바디를 끝까지 읽어야 '통신 완료'로 간주됩니다.
-        const ttsResult = await ttsResponse.json(); 
-        console.log("TTS 완료:", ttsResult);
-      } catch (e) {
-            if (e instanceof Error) {
-          // 이제 e는 Error 타입으로 추론되어 .message 사용이 가능합니다.
-          console.error("TTS 서비스 호출 중 최종 실패:", e.message);
-        } else {
-          // 에러가 객체가 아닌 문자열이나 다른 타입으로 던져졌을 경우
-          console.error("알 수 없는 에러 발생:", String(e));
-        }
-      }
+    //     // ⭐ 중요: 응답 바디를 끝까지 읽어야 '통신 완료'로 간주됩니다.
+    //     const ttsResult = await ttsResponse.json(); 
+    //     console.log("TTS 완료:", ttsResult);
+    //   } catch (e) {
+    //         if (e instanceof Error) {
+    //       // 이제 e는 Error 타입으로 추론되어 .message 사용이 가능합니다.
+    //       console.error("TTS 서비스 호출 중 최종 실패:", e.message);
+    //     } else {
+    //       // 에러가 객체가 아닌 문자열이나 다른 타입으로 던져졌을 경우
+    //       console.error("알 수 없는 에러 발생:", String(e));
+    //     }
+    //   }
 
   // ✅ 캐시 미스(처음 생성)일 때만 저장되도록 이 함수 안에서 저장
   await supabaseService.save(cleanContent);
