@@ -4,7 +4,6 @@ import { getSampleLesson } from "@/mocks/grammar";
 import { supabaseService } from "@/repository/databaseService";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { unstable_cache } from "next/cache";
-import { generateTTSForLesson } from "./tts/generateTTSForLesson";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -54,7 +53,14 @@ async function generateAndPersist(year: number, month: number, day: number) {
 
   const mp3DataKey = `${year}_${month}_${day}`;
   // mp3 파일 생성
-  generateTTSForLesson(grammarData, mp3DataKey);
+  const MP3_SERVICE_URL = process.env.MP3_SERVICE_URL || "http://localhost:3000";
+  //generateTTSForLesson(grammarData, mp3DataKey);
+  fetch(`${MP3_SERVICE_URL}/api/tts/generate`,{
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({grammarData, mp3DataKey}),
+  }).catch(err => console.error("TTS 서비스 호출 실패:",err));
+
   // ✅ 캐시 미스(처음 생성)일 때만 저장되도록 이 함수 안에서 저장
   await supabaseService.save(cleanContent);
 
