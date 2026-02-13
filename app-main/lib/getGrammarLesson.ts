@@ -56,36 +56,25 @@ async function generateAndPersist(year: number, month: number, day: number) {
   const MP3_SERVICE_URL = process.env.NEXT_PUBLIC_MP3_SERVICE_URL || "http://localhost:3000";
   //generateTTSForLesson(grammarData, mp3DataKey);
   console.log("파일 생성 위치: ", MP3_SERVICE_URL);
-  try{
-       await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ grammarData, mp3DataKey }),
-    })
-    .then(async (response) => {
-        // 1. 응답 상태 코드 및 기본 정보 로깅
-        console.log(`[TTS 요청 결과] Status: ${response.status} ${response.statusText}`);
-        console.log(`[URL]: ${response.url}`);
-
-        if (!response.ok) {
-            // 2. 서버에서 보내준 에러 메시지 본문 읽기 (text 또는 json)
-            const errorDetail = await response.text();
-            console.error(`[TTS 서버 에러 메시지]: ${errorDetail}`);
-            throw new Error(`서버 응답 에러: ${response.status}`);
+    try {
+        const ttsResponse = await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ grammarData, mp3DataKey }),
+        });
+        
+        // ⭐ 중요: 응답 바디를 끝까지 읽어야 '통신 완료'로 간주됩니다.
+        const ttsResult = await ttsResponse.json(); 
+        console.log("TTS 완료:", ttsResult);
+      } catch (e) {
+            if (e instanceof Error) {
+          // 이제 e는 Error 타입으로 추론되어 .message 사용이 가능합니다.
+          console.error("TTS 서비스 호출 중 최종 실패:", e.message);
+        } else {
+          // 에러가 객체가 아닌 문자열이나 다른 타입으로 던져졌을 경우
+          console.error("알 수 없는 에러 발생:", String(e));
         }
-
-        return response.json();
-    })
-    .then(data => {
-        console.log("TTS 생성 성공:", data);
-    })
-    .catch(err => {
-        // 네트워크 장애나 위에서 throw한 에러가 여기로 옵니다.
-        console.error("TTS 서비스 호출 중 최종 실패:", err.message);
-    });
-  } catch (err) {
-    // 네트워크 타임아웃이나 연결 실패 시 로그
-  }
+      }
 
   // ✅ 캐시 미스(처음 생성)일 때만 저장되도록 이 함수 안에서 저장
   await supabaseService.save(cleanContent);
@@ -102,7 +91,7 @@ export async function getGrammarLesson(year: number, month: number, day: number)
     key,
     { revalidate, tags: ["grammar", `grammar-${year}-${month}-${day}`] }
   );
-
+   
   return cached();
 }
 
