@@ -57,7 +57,7 @@ async function generateAndPersist(year: number, month: number, day: number) {
   //generateTTSForLesson(grammarData, mp3DataKey);
   console.log("파일 생성 위치: ", MP3_SERVICE_URL);
   try{
-        fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
+       await fetch(`${MP3_SERVICE_URL}/api/tts/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ grammarData, mp3DataKey }),
