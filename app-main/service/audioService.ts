@@ -225,13 +225,13 @@ async playEdgeTTSV2(date: string, type: string, id?: number): Promise<void> {
       audio.onerror = (e) => {
         URL.revokeObjectURL(url);
         console.error("⚠️ 오디오 객체 에러 발생");
-        reject(e);
+        reject(e);   
       };
 
       // 💡 모든 이벤트 리스너를 등록한 "후"에 src를 할당하고 로드합니다.
       audio.src = url;
       audio.load();
-    });
+    });  
 
   } catch (error: unknown) {
     // ... (에러 처리 로직은 동일)
