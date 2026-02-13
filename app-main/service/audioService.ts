@@ -95,7 +95,7 @@ async playEdgeTTS(date: string, type: string, id?: number): Promise<void> {
   });
   
   try {
-    const MP3_SERVICE_URL = process.env.MP3_SERVICE_URL || "http://localhost:3000";
+    const MP3_SERVICE_URL = process.env.NEXT_PUBLIC_MP3_SERVICE_URL || "http://localhost:3000";
     // 3. fetch에 signal 전달 (광클 시 이전 요청 자동 취소)
     const response = await fetch(`${MP3_SERVICE_URL}/api/tts?${params}`, {
       signal: this.abortController.signal

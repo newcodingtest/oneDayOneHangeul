@@ -6,7 +6,6 @@ export async function POST(request: NextRequest){
 
   try{
     await generateTTSForLesson(grammarData, mp3DataKey);
-
     return NextResponse.json({
       success: true,
       message: "MP3 생성 완료"

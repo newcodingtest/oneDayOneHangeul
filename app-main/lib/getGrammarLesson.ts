@@ -53,8 +53,9 @@ async function generateAndPersist(year: number, month: number, day: number) {
 
   const mp3DataKey = `${year}_${month}_${day}`;
   // mp3 파일 생성
-  const MP3_SERVICE_URL = process.env.MP3_SERVICE_URL || "http://localhost:3000";
+  const MP3_SERVICE_URL = process.env.NEXT_PUBLIC_MP3_SERVICE_URL || "http://localhost:3000";
   //generateTTSForLesson(grammarData, mp3DataKey);
+
   fetch(`${MP3_SERVICE_URL}/api/tts/generate`,{
     method: 'POST',
     headers: {'Content-Type': 'application/json'},

@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     return new Response(new Uint8Array(buffer), {
       headers: { 
         "Content-Type": "audio/mpeg",
-        "Cache-Control": "public, max-age=31536000, immutable" 
+        "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   } catch (error) {
