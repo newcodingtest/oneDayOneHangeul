@@ -28,7 +28,7 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
     try {
       setIsPlaying(id);
       //await audioService.play(text, { lang: 'ko', rate: 0.9 });
-      await audioService.playEdgeTTS(date, type, id);
+      await audioService.playEdgeTTSV2(date, type, id);
       setIsPlaying(null);
     } catch (error) {
       console.error("재생 중 오류 발생:", error);

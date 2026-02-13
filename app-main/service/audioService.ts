@@ -152,6 +152,105 @@ async playEdgeTTS(date: string, type: string, id?: number): Promise<void> {
         throw error;
   }
 }
+
+
+async playEdgeTTSV2(date: string, type: string, id?: number): Promise<void> {
+  // 1. 이전 요청 취소
+  if (this.abortController) {
+    this.abortController.abort();
+  }
+  this.abortController = new AbortController();
+
+  // 2. 기존 재생 소리 즉시 정지 및 청소
+  if (this.currentAudio) {
+    this.currentAudio.pause();
+    this.currentAudio.oncanplay = null; // 리스너 제거로 메모리 누수 방지
+    this.currentAudio.onended = null;
+    this.currentAudio.src = "";
+    this.currentAudio.load();
+    this.currentAudio = null;
+  }
+
+  const params = new URLSearchParams({
+    date,
+    type,
+    ...(id && { id: id.toString() }),
+  });
+  
+  try {
+    const MP3_SERVICE_URL = process.env.NEXT_PUBLIC_MP3_SERVICE_URL || "http://localhost:3000";
+    const response = await fetch(`${MP3_SERVICE_URL}/api/tts?${params}`, {
+      signal: this.abortController.signal
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`서버 에러: ${errorData.error || response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    console.log("📦 Blob Size:", blob.size); // 100바이트 이상인지 콘솔 확인용
+    if (blob.size < 100) throw new Error("데이터 부족");
+
+    const url = URL.createObjectURL(blob);
+    
+    // 💡 중요: Audio 객체 생성 시 src를 바로 넣지 않습니다.
+    const audio = new Audio();
+    this.currentAudio = audio;
+
+    return new Promise((resolve, reject) => {
+      audio.volume = 1.0;
+
+      // 💡 oncanplaythrough보다 빠른 oncanplay 사용
+      audio.oncanplay = async () => {
+        try {
+          if (this.currentAudio === audio) {
+            console.log("▶️ 재생 시도 중...");
+            await audio.play();
+            console.log("✅ 재생 시작됨");
+          }
+        } catch (e) { 
+          console.error("❌ 재생 실패 (Autoplay 정책 확인 필요):", e);
+          reject(e); 
+        }
+      };
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (this.currentAudio === audio) this.currentAudio = null;
+        console.log("🏁 재생 완료");
+        resolve();
+      };
+
+      audio.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        console.error("⚠️ 오디오 객체 에러 발생");
+        reject(e);
+      };
+
+      // 💡 모든 이벤트 리스너를 등록한 "후"에 src를 할당하고 로드합니다.
+      audio.src = url;
+      audio.load();
+    });
+
+  } catch (error: unknown) {
+    // ... (에러 처리 로직은 동일)
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log("이전 요청이 취소되었습니다.");
+          return; 
+        }
+
+        // 2. 일반 에러 처리
+        if (error instanceof Error) {
+          console.error("Edge TTS 재생 에러 상세:", error.message);
+        } else {
+          console.error("알 수 없는 에러 발생:", error);
+        }
+        
+        throw error;
+  }
+}
+
   /**
    * 재생 중지
    */

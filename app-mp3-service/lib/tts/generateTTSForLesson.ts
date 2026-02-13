@@ -16,6 +16,8 @@ export async function generateTTSForLesson(
 ) {
   const baseDir = path.join(process.cwd(), "tts-cache", dateKey);
 
+  console.log("mp3 생성경로 확인: ", baseDir);
+  
   // 메인 문장 MP3
   await generateMp3(
     lesson.sentence,
