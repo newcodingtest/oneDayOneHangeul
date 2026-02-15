@@ -1,10 +1,10 @@
-import { supabaseAdmin } from '@/lib/supabaseServer';
+import { supabaseServer } from '@/lib/supabaseServer';
 
 export const supabaseService = {
   async save(content: string){
     console.log('쿼리 까지는 들어왔어: ', content);
-    const {data, error} = await supabaseAdmin
-    .from('ko_grammar')
+    const {data, error} = await supabaseServer
+    .from('korean_grammar')
     .insert([
       {
         content: content

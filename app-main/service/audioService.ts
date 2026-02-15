@@ -251,6 +251,9 @@ async playEdgeTTSV2(date: string, type: string, id?: number): Promise<void> {
   }
 }
 
+
+
+
   /**
    * 재생 중지
    */
@@ -290,7 +293,12 @@ async playEdgeTTSV2(date: string, type: string, id?: number): Promise<void> {
     return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   }
 
+  
+
 }
+
+
+
 
 // 싱글톤 인스턴스
 export const audioService = new AudioService();

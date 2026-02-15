@@ -6,6 +6,7 @@ import ExampleSentences from '@/components/ExampleSentences';
 import GrammarExplanation from '@/components/GrammarExplanation';
 import SentenceCard from '@/components/SentenceCard';
 import { audioService } from '@/service/audioService';
+import { audioServiceV1 } from '@/service/audioServiceV1';
 import { GrammarLesson } from '@/types/grammer';
 import { useState } from 'react';
 
@@ -36,6 +37,17 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
     }
   };
 
+    const playAudioV3 = async (objectPath: string, id: number) => {
+    try {
+      setIsPlaying(id);
+      await audioServiceV1.playFromObjectPath(objectPath);
+      setIsPlaying(null);
+    } catch (error) {
+      console.error("재생 중 오류 발생:", error);
+      setIsPlaying(null);
+    }
+  };
+
   return (
     <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
       <DayCounter date={lesson.date} day={lesson.day} />
@@ -45,7 +57,7 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
         translation={lesson.sentenceTranslation}
         phonetic={lesson.phonetic}
         isPlaying={isPlaying === 0}
-        onPlay={() => playAudioV2(lesson.date, "main", -1)}
+        onPlay={() => playAudioV3(lesson.tts.mainObjectPath, 0)}
       />
 
       <GrammarExplanation
@@ -57,7 +69,7 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
       <ExampleSentences
         examples={lesson.examples}
         playingId={isPlaying}
-        onPlay={(text, id) => playAudioV2(lesson.date,"example", id)}
+        onPlay={(text, id) => playAudioV3(lesson.tts.exampleObjectPaths[id], id)}
       />
     </main>
   );

@@ -8,6 +8,8 @@ export interface GrammarLesson {
   grammarExplanation: string;
   structure: string;
   examples: ExampleSentence[];
+
+  tts: LessonTtsInfo;
 }
 
 export interface ExampleSentence {
@@ -15,5 +17,10 @@ export interface ExampleSentence {
   text: string;
   phonetic: string;
   translation: string;
+}
+
+export interface LessonTtsInfo {
+  mainObjectPath: string;
+  exampleObjectPaths: Record<number, string>;
 }
 
