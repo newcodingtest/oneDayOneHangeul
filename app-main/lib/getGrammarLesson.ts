@@ -1,7 +1,7 @@
 // lib/grammar/getGrammarLesson.ts
 import { KOREAN_LEARNING_PROMPT } from "@/lib/prompts";
 import { getSampleLesson } from "@/mocks/grammar";
-import { supabaseService } from "@/repository/databaseService";
+import { grammarRepository } from "@/repository/grammarRepository";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { unstable_cache } from "next/cache";
 
@@ -77,7 +77,7 @@ async function generateAndPersist(year: number, month: number, day: number) {
     //   }
 
   // ✅ 캐시 미스(처음 생성)일 때만 저장되도록 이 함수 안에서 저장
-  await supabaseService.save(cleanContent);
+  await grammarRepository.save(cleanContent);
 
   return grammarData;
 }

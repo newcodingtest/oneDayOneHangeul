@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabaseServer';
 
 
-export const supabaseService = {
+export const grammarRepository = {
   async save(content: string){
     console.log('쿼리 까지는 들어왔어: ', content);
     const {data, error} = await supabaseAdmin
