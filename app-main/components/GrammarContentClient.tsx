@@ -45,7 +45,8 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
         translation={lesson.sentenceTranslation}
         phonetic={lesson.phonetic}
         isPlaying={isPlaying === 0}
-        onPlay={() => playAudioV2(lesson.date, "main", -1)}
+         onPlay={() => playAudioV2(lesson.date, "main", -1)}
+          //onPlay={() => playAudioV1(lesson.date, 0)}
       />
 
       <GrammarExplanation
@@ -57,7 +58,8 @@ export default function GrammarContentClient({ lesson }: { lesson: GrammarLesson
       <ExampleSentences
         examples={lesson.examples}
         playingId={isPlaying}
-        onPlay={(text, id) => playAudioV2(lesson.date,"example", id)}
+         onPlay={(text, id) => playAudioV2(lesson.date,"example", id)}
+        //onPlay={(text, id) => playAudioV1(lesson.date, id)}
       />
     </main>
   );
