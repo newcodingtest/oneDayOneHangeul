@@ -9,7 +9,7 @@ export async function POST(request: NextRequest){
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ grammarData: grammarData, mp3DataKey: "2026_2_13"}),
         });
-// 3. 백엔드의 응답을 받아옵니다.
+   // 3. 백엔드의 응답을 받아옵니다.
     const result = await ttsResponse.json();
 
     // 4. ⭐ 중요: 브라우저에게 최종 결과를 반환합니다.
